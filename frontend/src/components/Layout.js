@@ -1,0 +1,132 @@
+import React, { useState } from 'react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
+import {
+  LayoutDashboard, PlusCircle, Ruler, Users, Scissors, Palette, LogOut,
+  Menu, X, ShieldCheck, ChevronRight
+} from 'lucide-react';
+
+const NAV_CONFIG = {
+  customer: [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/new-order', icon: PlusCircle, label: 'New Order' },
+    { to: '/measurements', icon: Ruler, label: 'My Measurements' },
+  ],
+  tailor: [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/tailor/customers', icon: Users, label: 'Customers' },
+    { to: '/tailor/clothing', icon: Scissors, label: 'Clothing Types' },
+    { to: '/tailor/fabrics', icon: Palette, label: 'Fabrics' },
+  ],
+  admin: [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/admin/users', icon: Users, label: 'Manage Users' },
+    { to: '/admin/clothing', icon: Scissors, label: 'Clothing Types' },
+    { to: '/admin/fabrics', icon: Palette, label: 'Fabrics' },
+  ],
+};
+
+const ROLE_COLORS = {
+  customer: '#4361ee',
+  tailor: '#16a34a',
+  admin: '#dc2626',
+};
+
+const Layout = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const initials = user
+    ? (user.first_name?.[0] || '') + (user.last_name?.[0] || '')
+    : 'U';
+
+  const navItems = NAV_CONFIG[user?.role] || NAV_CONFIG.customer;
+  const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.customer;
+
+  const getRoleIcon = () => {
+    switch (user?.role) {
+      case 'admin': return <ShieldCheck size={12} />;
+      case 'tailor': return <Scissors size={12} />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="app-layout">
+      {/* Top Navbar */}
+      <nav className="navbar">
+        <div className="navbar-left">
+          <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <NavLink to="/dashboard" className="navbar-brand">
+            <div className="logo-icon">FB</div>
+            FitByte
+          </NavLink>
+        </div>
+        <div className="navbar-right">
+          <div className="navbar-user">
+            <div className="user-avatar" style={{ background: roleColor }}>
+              {initials.toUpperCase()}
+            </div>
+            <div className="user-info-text">
+              <span className="user-name">{user?.first_name} {user?.last_name}</span>
+              <span className="navbar-role" style={{ background: roleColor }}>
+                {getRoleIcon()} {user?.role}
+              </span>
+            </div>
+          </div>
+          <button className="btn-logout" onClick={handleLogout}>
+            <LogOut size={16} />
+            <span className="logout-text">Logout</span>
+          </button>
+        </div>
+      </nav>
+
+      <div className="app-body">
+        {/* Sidebar */}
+        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+          <div className="sidebar-nav">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/dashboard'}
+                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+                <ChevronRight size={14} className="sidebar-arrow" />
+              </NavLink>
+            ))}
+          </div>
+
+          <div className="sidebar-footer">
+            <div className="sidebar-role-badge" style={{ borderColor: roleColor, color: roleColor }}>
+              {getRoleIcon()}
+              {user?.role === 'customer' ? 'Customer Portal' :
+               user?.role === 'tailor' ? 'Tailor Panel' : 'Admin Panel'}
+            </div>
+          </div>
+        </aside>
+
+        {/* Overlay for mobile */}
+        {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
+        {/* Main Content */}
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Layout;
