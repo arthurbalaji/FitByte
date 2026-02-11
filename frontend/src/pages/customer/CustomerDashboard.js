@@ -51,7 +51,7 @@ const CustomerDashboard = () => {
           <div className="card-icon-wrap" style={{ background: '#eff6ff', color: '#4361ee' }}>
             <PlusCircle size={28} />
           </div>
-          <h3>New Order</h3>
+          <h3>Create Order</h3>
           <p>Start a new custom tailoring order. Choose gender, clothing type, fabric, and measurements.</p>
         </div>
 

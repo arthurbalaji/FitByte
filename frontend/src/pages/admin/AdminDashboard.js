@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 import { getAdminStats } from '../../api';
-import { Users, Scissors, Palette, Ruler, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { Users, Scissors, Palette, Ruler, ShieldCheck, ArrowUpRight, UserCheck } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -40,15 +40,6 @@ const AdminDashboard = () => {
           <div className="stat-info">
             <span className="stat-number">{stats?.customers || 0}</span>
             <span className="stat-label">Customers</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
-            <Scissors size={22} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-number">{stats?.tailors || 0}</span>
-            <span className="stat-label">Tailors</span>
           </div>
         </div>
         <div className="stat-card">
@@ -100,12 +91,21 @@ const AdminDashboard = () => {
             <Users size={28} />
           </div>
           <h3>Manage Users</h3>
-          <p>View, edit, and manage all users — customers, tailors, and admins.</p>
+          <p>View, edit, and manage all users — customers and admins.</p>
           <span className="card-action">Manage <ArrowUpRight size={14} /></span>
         </div>
 
-        <div className="dashboard-card" onClick={() => navigate('/admin/clothing')}>
+        <div className="dashboard-card" onClick={() => navigate('/admin/customers')}>
           <div className="card-icon-wrap" style={{ background: '#f0fdf4', color: '#16a34a' }}>
+            <UserCheck size={28} />
+          </div>
+          <h3>Customer Measurements</h3>
+          <p>View customers and their saved measurements for orders.</p>
+          <span className="card-action">View <ArrowUpRight size={14} /></span>
+        </div>
+
+        <div className="dashboard-card" onClick={() => navigate('/admin/clothing')}>
+          <div className="card-icon-wrap" style={{ background: '#f3e8ff', color: '#7c3aed' }}>
             <Scissors size={28} />
           </div>
           <h3>Clothing Types</h3>

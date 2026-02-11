@@ -251,7 +251,6 @@ def admin_stats(request):
     return Response({
         'total_users': User.objects.count(),
         'customers': User.objects.filter(role='customer').count(),
-        'tailors': User.objects.filter(role='tailor').count(),
         'admins': User.objects.filter(role='admin').count(),
         'total_clothing_types': ClothingType.objects.count(),
         'total_fabrics': Fabric.objects.count(),
@@ -261,7 +260,7 @@ def admin_stats(request):
 
 @api_view(['POST', 'PUT', 'DELETE'])
 def manage_clothing_type(request, pk=None):
-    user, err = require_role(request, ['admin', 'tailor'])
+    user, err = require_role(request, ['admin'])
     if err:
         return err
 
@@ -291,7 +290,7 @@ def manage_clothing_type(request, pk=None):
 
 @api_view(['POST', 'PUT', 'DELETE'])
 def manage_fabric(request, pk=None):
-    user, err = require_role(request, ['admin', 'tailor'])
+    user, err = require_role(request, ['admin'])
     if err:
         return err
 
@@ -321,7 +320,7 @@ def manage_fabric(request, pk=None):
 
 @api_view(['GET'])
 def tailor_customers(request):
-    user, err = require_role(request, ['tailor', 'admin'])
+    user, err = require_role(request, ['admin'])
     if err:
         return err
     customers = User.objects.filter(role='customer').order_by('-date_joined')
@@ -330,7 +329,7 @@ def tailor_customers(request):
 
 @api_view(['GET'])
 def tailor_customer_measurements(request, customer_id):
-    user, err = require_role(request, ['tailor', 'admin'])
+    user, err = require_role(request, ['admin'])
     if err:
         return err
     measurements = SavedMeasurement.objects.filter(user_id=customer_id).order_by('-updated_at')

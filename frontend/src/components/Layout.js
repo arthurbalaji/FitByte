@@ -3,24 +3,19 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import {
   LayoutDashboard, PlusCircle, Ruler, Users, Scissors, Palette, LogOut,
-  Menu, X, ShieldCheck, ChevronRight
+  Menu, X, ShieldCheck, ChevronRight, UserCheck
 } from 'lucide-react';
 
 const NAV_CONFIG = {
   customer: [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/new-order', icon: PlusCircle, label: 'New Order' },
+    { to: '/new-order', icon: PlusCircle, label: 'Create Order' },
     { to: '/measurements', icon: Ruler, label: 'My Measurements' },
-  ],
-  tailor: [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/tailor/customers', icon: Users, label: 'Customers' },
-    { to: '/tailor/clothing', icon: Scissors, label: 'Clothing Types' },
-    { to: '/tailor/fabrics', icon: Palette, label: 'Fabrics' },
   ],
   admin: [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/users', icon: Users, label: 'Manage Users' },
+    { to: '/admin/customers', icon: UserCheck, label: 'Customers' },
     { to: '/admin/clothing', icon: Scissors, label: 'Clothing Types' },
     { to: '/admin/fabrics', icon: Palette, label: 'Fabrics' },
   ],
@@ -28,7 +23,6 @@ const NAV_CONFIG = {
 
 const ROLE_COLORS = {
   customer: '#4361ee',
-  tailor: '#16a34a',
   admin: '#dc2626',
 };
 
@@ -52,7 +46,6 @@ const Layout = () => {
   const getRoleIcon = () => {
     switch (user?.role) {
       case 'admin': return <ShieldCheck size={12} />;
-      case 'tailor': return <Scissors size={12} />;
       default: return null;
     }
   };
@@ -111,8 +104,7 @@ const Layout = () => {
           <div className="sidebar-footer">
             <div className="sidebar-role-badge" style={{ borderColor: roleColor, color: roleColor }}>
               {getRoleIcon()}
-              {user?.role === 'customer' ? 'Customer Portal' :
-               user?.role === 'tailor' ? 'Tailor Panel' : 'Admin Panel'}
+              {user?.role === 'customer' ? 'Customer Portal' : 'Admin Panel'}
             </div>
           </div>
         </aside>

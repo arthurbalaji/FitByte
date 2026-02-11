@@ -5,6 +5,7 @@ import {
   getMeasurementFields, saveMeasurement,
 } from '../api';
 import { Check, Info, ArrowLeft, ArrowRight, Save } from 'lucide-react';
+import MannequinPreview2D from '../components/MannequinPreview2D';
 
 const GENDERS = [
   { value: 'male', label: 'Male', emoji: '👔' },
@@ -137,7 +138,9 @@ const NewOrder = () => {
   };
 
   return (
-    <div>
+    <div className="new-order-layout">
+      {/* Left: Order flow */}
+      <div className="new-order-main">
       <div className="page-header">
         <h1>New Custom Order</h1>
         <p>Follow the steps to configure your perfect outfit</p>
@@ -477,6 +480,18 @@ const NewOrder = () => {
           </div>
         </div>
       )}
+      </div>
+
+      {/* Right: Live Preview Panel */}
+      <div className="new-order-preview">
+        <MannequinPreview2D
+          gender={gender || 'male'}
+          clothingType={selectedClothing?.name || 'Shirt'}
+          fabricColor={selectedColor?.hex_code || '#4a90d9'}
+          patternName={selectedPattern?.name || 'solid'}
+          fabricName={selectedFabric?.name || 'Cotton'}
+        />
+      </div>
     </div>
   );
 };

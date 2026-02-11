@@ -44,8 +44,8 @@ export const addFabric = (data) => API.post('/admin/fabrics/', data);
 export const updateFabric = (id, data) => API.put(`/admin/fabrics/${id}/`, data);
 export const deleteFabricItem = (id) => API.delete(`/admin/fabrics/${id}/`);
 
-// Tailor
-export const getTailorCustomers = () => API.get('/tailor/customers/');
+// Admin - Customers
+export const getAdminCustomers = () => API.get('/tailor/customers/');
 export const getCustomerMeasurements = (customerId) =>
   API.get(`/tailor/customers/${customerId}/measurements/`);
 

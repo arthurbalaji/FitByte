@@ -11,17 +11,12 @@ import CustomerDashboard from './pages/customer/CustomerDashboard';
 import NewOrder from './pages/NewOrder';
 import Measurements from './pages/Measurements';
 
-// Tailor pages
-import TailorDashboard from './pages/tailor/TailorDashboard';
-import TailorCustomers from './pages/tailor/TailorCustomers';
-import ManageClothing from './pages/tailor/ManageClothing';
-import ManageFabrics from './pages/tailor/ManageFabrics';
-
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageUsers from './pages/admin/ManageUsers';
 import AdminClothing from './pages/admin/AdminClothing';
 import AdminFabrics from './pages/admin/AdminFabrics';
+import AdminCustomers from './pages/admin/AdminCustomers';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -64,15 +59,11 @@ function App() {
             <Route path="new-order" element={<RoleRoute roles={['customer']}><NewOrder /></RoleRoute>} />
             <Route path="measurements" element={<RoleRoute roles={['customer']}><Measurements /></RoleRoute>} />
 
-            {/* Tailor routes */}
-            <Route path="tailor/customers" element={<RoleRoute roles={['tailor']}><TailorCustomers /></RoleRoute>} />
-            <Route path="tailor/clothing" element={<RoleRoute roles={['tailor']}><ManageClothing /></RoleRoute>} />
-            <Route path="tailor/fabrics" element={<RoleRoute roles={['tailor']}><ManageFabrics /></RoleRoute>} />
-
             {/* Admin routes */}
             <Route path="admin/users" element={<RoleRoute roles={['admin']}><ManageUsers /></RoleRoute>} />
             <Route path="admin/clothing" element={<RoleRoute roles={['admin']}><AdminClothing /></RoleRoute>} />
             <Route path="admin/fabrics" element={<RoleRoute roles={['admin']}><AdminFabrics /></RoleRoute>} />
+            <Route path="admin/customers" element={<RoleRoute roles={['admin']}><AdminCustomers /></RoleRoute>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" />} />
@@ -86,7 +77,6 @@ const RoleDashboard = () => {
   const { user } = useAuth();
   if (!user) return null;
   switch (user.role) {
-    case 'tailor': return <TailorDashboard />;
     case 'admin': return <AdminDashboard />;
     default: return <CustomerDashboard />;
   }
