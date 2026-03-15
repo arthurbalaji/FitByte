@@ -144,6 +144,14 @@ const GeminiDressPreview = ({
       `gender=${gender}`,
     ].join('; ');
 
+    const orientationRule = angle.id === 'left'
+      ? 'LEFT VIEW LOCK: show only the garment\'s LEFT profile. The front of the garment must point toward the RIGHT side of the frame. Do NOT mirror this view.'
+      : angle.id === 'right'
+      ? 'RIGHT VIEW LOCK: show only the garment\'s RIGHT profile. The front of the garment must point toward the LEFT side of the frame. Do NOT mirror this view.'
+      : angle.id === 'front'
+      ? 'FRONT VIEW LOCK: camera is directly in front; both left and right sides are symmetric around center.'
+      : 'BACK VIEW LOCK: camera is directly behind; only back side visible, no front panel visible.';
+
     const prompt = `Create ONE photorealistic e-commerce apparel image of the SAME EXACT garment identity across multi-view generation.
 
 IMMUTABLE GARMENT IDENTITY (must not change):
@@ -157,6 +165,12 @@ STRICT CONSISTENCY RULES:
 
 CAMERA VIEW REQUIRED:
 ${angle.position}
+${orientationRule}
+
+SUBJECT COUNT (MANDATORY):
+- Exactly ONE garment instance in the frame.
+- Never generate multiple garments, duplicates, tiled products, reflections, or collage panels.
+- One camera frame, one product, one angle only.
 
 COMPOSITION / OUTPUT SPECS:
 - Aspect ratio: 3:4 portrait (exactly 1200x1600).
@@ -176,6 +190,8 @@ STYLE REQUIREMENTS:
 NEGATIVE CONSTRAINTS:
 - No person, no skin, no face, no hands.
 - No text, watermark, logo, border, or collage.
+- No mirrored side-view orientation mistakes.
+- No second garment, no ghost duplicate, no repeated product in background.
 - No cropped garment, no tilted camera, no dramatic perspective.
 
 Return only the final image.`;
