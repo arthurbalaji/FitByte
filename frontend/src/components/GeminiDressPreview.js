@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, ZoomIn, Download, Eye } from 'lucide-react';
 
 // Gemini API configuration
-const GEMINI_API_KEY = 'AIzaSyC_kbJYG9ug2SAf_cBOMz4nhanhgCTQwTY';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent';
+const GEMINI_API_KEY = '';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent';
 
 const ANGLES = [
   { id: 'front', label: 'Front View', position: 'photographed directly from the front, camera facing the chest/torso area, buttons and front details clearly visible' },
@@ -135,27 +135,50 @@ const GeminiDressPreview = ({
       ? 'polka dot pattern with small circular dots'
       : `${patternName?.toLowerCase()} pattern`;
 
-    const prompt = `E-commerce product photo of EXACTLY this garment: ${dressDesc.full}.
+    const designFingerprint = [
+      `garment_type=${dressDesc.type}`,
+      `fabric=${dressDesc.fabric}`,
+      `color_name=${dressDesc.color}`,
+      `color_hex=${fabricColor}`,
+      `pattern=${patternDetail}`,
+      `gender=${gender}`,
+    ].join('; ');
 
-CRITICAL - THIS EXACT GARMENT MUST HAVE:
-- Fabric: ${dressDesc.fabric} material with natural ${dressDesc.fabric} texture
-- Color: EXACTLY ${dressDesc.color} color (hex: ${fabricColor})
-- Pattern: ${patternDetail}
-- Style: ${dressDesc.type}
+    const prompt = `Create ONE photorealistic e-commerce apparel image of the SAME EXACT garment identity across multi-view generation.
 
-CAMERA ANGLE: ${angle.position}
+IMMUTABLE GARMENT IDENTITY (must not change):
+${designFingerprint}
 
-REQUIREMENTS:
-- Ghost mannequin/invisible mannequin photography style
-- Pure white (#FFFFFF) studio background
-- Professional soft box lighting from front and sides
-- The garment appears to float, showing its 3D shape
-- Sharp focus on fabric texture and stitching details
-- No human body visible, only the garment
-- High-end fashion catalog quality
-- Consistent lighting across all angles
+STRICT CONSISTENCY RULES:
+- Keep silhouette, seam lines, collar shape, sleeve shape, hem length, placket, pocket placement, button count/placement, and fit identical to the immutable identity.
+- Do not alter shade, saturation, texture scale, or pattern geometry.
+- Do not add/remove accessories, logos, embroidery, trims, props, or extra layers.
+- This image must look like the same physical garment photographed from another angle, not a variation.
 
-Generate a photorealistic product image.`;
+CAMERA VIEW REQUIRED:
+${angle.position}
+
+COMPOSITION / OUTPUT SPECS:
+- Aspect ratio: 3:4 portrait (exactly 1200x1600).
+- Product centered, entire garment fully visible top-to-bottom with small clean margins.
+- Keep camera distance and framing consistent with other angles.
+
+BACKGROUND AND LIGHTING (MANDATORY):
+- Pure white studio background only (#FFFFFF), evenly lit.
+- No gradients, no shadows on background, no floor texture, no scene elements.
+- Soft, neutral studio lighting with realistic garment shading only.
+
+STYLE REQUIREMENTS:
+- Ghost mannequin / invisible mannequin fashion catalog style.
+- Ultra sharp fabric weave and stitching detail.
+- High-end retail product photography quality.
+
+NEGATIVE CONSTRAINTS:
+- No person, no skin, no face, no hands.
+- No text, watermark, logo, border, or collage.
+- No cropped garment, no tilted camera, no dramatic perspective.
+
+Return only the final image.`;
 
     try {
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
