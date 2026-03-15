@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import {
-  LayoutDashboard, PlusCircle, Ruler, Users, Scissors, Palette, LogOut,
-  Menu, X, ShieldCheck, ChevronRight, UserCheck
+  LayoutDashboard, PlusCircle, Users, Scissors, Palette, LogOut,
+  Menu, X, ShieldCheck, ChevronRight, UserCheck, Package, MapPin, Eye
 } from 'lucide-react';
 
 const NAV_CONFIG = {
   customer: [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/new-order', icon: PlusCircle, label: 'Create Order' },
-    { to: '/measurements', icon: Ruler, label: 'My Measurements' },
+    { to: '/trial-view', icon: Eye, label: 'Trial View' },
+    { to: '/orders', icon: Package, label: 'My Orders' },
+    { to: '/addresses', icon: MapPin, label: 'My Addresses' },
   ],
   admin: [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/admin/orders', icon: Package, label: 'Orders' },
     { to: '/admin/users', icon: Users, label: 'Manage Users' },
     { to: '/admin/customers', icon: UserCheck, label: 'Customers' },
     { to: '/admin/clothing', icon: Scissors, label: 'Clothing Types' },

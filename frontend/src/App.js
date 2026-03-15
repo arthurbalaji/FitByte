@@ -9,7 +9,9 @@ import Layout from './components/Layout';
 // Customer pages
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import NewOrder from './pages/NewOrder';
-import Measurements from './pages/Measurements';
+import TrialView from './pages/TrialView';
+import Addresses from './pages/customer/Addresses';
+import OrderHistory from './pages/customer/OrderHistory';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -17,6 +19,7 @@ import ManageUsers from './pages/admin/ManageUsers';
 import AdminClothing from './pages/admin/AdminClothing';
 import AdminFabrics from './pages/admin/AdminFabrics';
 import AdminCustomers from './pages/admin/AdminCustomers';
+import AdminOrders from './pages/admin/AdminOrders';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -57,13 +60,16 @@ function App() {
 
             {/* Customer routes */}
             <Route path="new-order" element={<RoleRoute roles={['customer']}><NewOrder /></RoleRoute>} />
-            <Route path="measurements" element={<RoleRoute roles={['customer']}><Measurements /></RoleRoute>} />
+            <Route path="trial-view" element={<RoleRoute roles={['customer']}><TrialView /></RoleRoute>} />
+            <Route path="addresses" element={<RoleRoute roles={['customer']}><Addresses /></RoleRoute>} />
+            <Route path="orders" element={<RoleRoute roles={['customer']}><OrderHistory /></RoleRoute>} />
 
             {/* Admin routes */}
             <Route path="admin/users" element={<RoleRoute roles={['admin']}><ManageUsers /></RoleRoute>} />
             <Route path="admin/clothing" element={<RoleRoute roles={['admin']}><AdminClothing /></RoleRoute>} />
             <Route path="admin/fabrics" element={<RoleRoute roles={['admin']}><AdminFabrics /></RoleRoute>} />
             <Route path="admin/customers" element={<RoleRoute roles={['admin']}><AdminCustomers /></RoleRoute>} />
+            <Route path="admin/orders" element={<RoleRoute roles={['admin']}><AdminOrders /></RoleRoute>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" />} />

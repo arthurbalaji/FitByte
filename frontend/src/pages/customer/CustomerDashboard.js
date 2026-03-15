@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
-import { getSavedMeasurements } from '../../api';
-import { PlusCircle, Ruler, Scissors, TrendingUp } from 'lucide-react';
+import { getOrders } from '../../api';
+import { PlusCircle, TrendingUp, Package, MapPin, Scissors } from 'lucide-react';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [measurementCount, setMeasurementCount] = useState(0);
+  const [orderStats, setOrderStats] = useState({ active: 0, total: 0 });
 
   useEffect(() => {
-    getSavedMeasurements()
-      .then((res) => setMeasurementCount(res.data.length))
+    getOrders()
+      .then((res) => {
+        const orders = res.data;
+        const activeStatuses = ['pending', 'confirmed', 'in_progress', 'ready', 'shipped'];
+        const active = orders.filter(o => activeStatuses.includes(o.status)).length;
+        setOrderStats({ active, total: orders.length });
+      })
       .catch(() => {});
   }, []);
 
@@ -24,22 +29,22 @@ const CustomerDashboard = () => {
 
       {/* Quick Stats */}
       <div className="stats-row">
-        <div className="stat-card">
+        <div className="stat-card" onClick={() => navigate('/orders')} style={{ cursor: 'pointer' }}>
           <div className="stat-icon" style={{ background: '#eff6ff', color: '#4361ee' }}>
-            <Ruler size={22} />
+            <Package size={22} />
           </div>
           <div className="stat-info">
-            <span className="stat-number">{measurementCount}</span>
-            <span className="stat-label">Saved Measurements</span>
+            <span className="stat-number">{orderStats.active}</span>
+            <span className="stat-label">Active Orders</span>
           </div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" onClick={() => navigate('/orders')} style={{ cursor: 'pointer' }}>
           <div className="stat-icon" style={{ background: '#f0fdf4', color: '#16a34a' }}>
             <TrendingUp size={22} />
           </div>
           <div className="stat-info">
-            <span className="stat-number">0</span>
-            <span className="stat-label">Active Orders</span>
+            <span className="stat-number">{orderStats.total}</span>
+            <span className="stat-label">Total Orders</span>
           </div>
         </div>
       </div>
@@ -55,16 +60,24 @@ const CustomerDashboard = () => {
           <p>Start a new custom tailoring order. Choose gender, clothing type, fabric, and measurements.</p>
         </div>
 
-        <div className="dashboard-card" onClick={() => navigate('/measurements')}>
-          <div className="card-icon-wrap" style={{ background: '#f0fdf4', color: '#16a34a' }}>
-            <Ruler size={28} />
+        <div className="dashboard-card" onClick={() => navigate('/orders')}>
+          <div className="card-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
+            <Package size={28} />
           </div>
-          <h3>My Measurements</h3>
-          <p>View and manage your saved measurements for quick ordering in the future.</p>
+          <h3>My Orders</h3>
+          <p>Track your orders and view order history, status updates, and delivery information.</p>
+        </div>
+
+        <div className="dashboard-card" onClick={() => navigate('/addresses')}>
+          <div className="card-icon-wrap" style={{ background: '#ede9fe', color: '#7c3aed' }}>
+            <MapPin size={28} />
+          </div>
+          <h3>My Addresses</h3>
+          <p>Manage your delivery addresses for faster checkout on future orders.</p>
         </div>
 
         <div className="dashboard-card" onClick={() => navigate('/new-order')}>
-          <div className="card-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
+          <div className="card-icon-wrap" style={{ background: '#f0fdf4', color: '#16a34a' }}>
             <Scissors size={28} />
           </div>
           <h3>Explore Fabrics</h3>

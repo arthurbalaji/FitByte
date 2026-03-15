@@ -5,11 +5,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
-from .models import User, ClothingType, Fabric, FabricColor, Pattern, MeasurementField, SavedMeasurement
+from .models import User, ClothingType, Fabric, FabricColor, Pattern, MeasurementField, SavedMeasurement, Address, Order, OrderStatusHistory
 from .serializers import (
     RegisterSerializer, LoginSerializer, UserSerializer,
     ClothingTypeSerializer, FabricSerializer, FabricColorSerializer,
-    PatternSerializer, MeasurementFieldSerializer, SavedMeasurementSerializer
+    PatternSerializer, MeasurementFieldSerializer, SavedMeasurementSerializer,
+    AddressSerializer, OrderSerializer, OrderCreateSerializer, OrderStatusHistorySerializer
 )
 
 
@@ -334,3 +335,256 @@ def tailor_customer_measurements(request, customer_id):
         return err
     measurements = SavedMeasurement.objects.filter(user_id=customer_id).order_by('-updated_at')
     return Response(SavedMeasurementSerializer(measurements, many=True).data)
+
+
+# ─── ADDRESS MANAGEMENT ──────────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def addresses(request):
+    """List all addresses or create a new address for the authenticated user."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if request.method == 'GET':
+        user_addresses = Address.objects.filter(user=user)
+        return Response(AddressSerializer(user_addresses, many=True).data)
+
+    elif request.method == 'POST':
+        serializer = AddressSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save(user=user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def address_detail(request, pk):
+    """Retrieve, update or delete an address."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        address = Address.objects.get(pk=pk, user=user)
+    except Address.DoesNotExist:
+        return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        return Response(AddressSerializer(address).data)
+
+    elif request.method == 'PUT':
+        serializer = AddressSerializer(address, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data)
+
+    elif request.method == 'DELETE':
+        address.delete()
+        return Response({'message': 'Address deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+def set_default_address(request, pk):
+    """Set an address as the default."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        address = Address.objects.get(pk=pk, user=user)
+    except Address.DoesNotExist:
+        return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    address.is_default = True
+    address.save()
+    return Response(AddressSerializer(address).data)
+
+
+# ─── ORDER MANAGEMENT (CUSTOMER) ─────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def orders(request):
+    """List all orders or create a new order for the authenticated user."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if request.method == 'GET':
+        user_orders = Order.objects.filter(user=user)
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            user_orders = user_orders.filter(status=status_filter)
+        return Response(OrderSerializer(user_orders, many=True).data)
+
+    elif request.method == 'POST':
+        serializer = OrderCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        order = serializer.save(user=user)
+        
+        # Create initial status history
+        OrderStatusHistory.objects.create(
+            order=order,
+            status='pending',
+            changed_by=user,
+            notes='Order placed'
+        )
+        
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def order_detail(request, pk):
+    """Retrieve order details."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        # Customers can only see their own orders
+        if user.role == 'customer':
+            order = Order.objects.get(pk=pk, user=user)
+        else:
+            order = Order.objects.get(pk=pk)
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response(OrderSerializer(order).data)
+
+
+@api_view(['POST'])
+def cancel_order(request, pk):
+    """Customer can cancel an order if it's still pending."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        order = Order.objects.get(pk=pk, user=user)
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if order.status not in ['pending', 'confirmed']:
+        return Response({'error': 'Order cannot be cancelled at this stage'}, status=status.HTTP_400_BAD_REQUEST)
+
+    order.status = 'cancelled'
+    order.save()
+    
+    OrderStatusHistory.objects.create(
+        order=order,
+        status='cancelled',
+        changed_by=user,
+        notes='Cancelled by customer'
+    )
+    
+    return Response(OrderSerializer(order).data)
+
+
+# ─── ORDER MANAGEMENT (ADMIN) ────────────────────────────────────────────────
+
+@api_view(['GET'])
+def admin_orders(request):
+    """List all orders (admin only)."""
+    user, err = require_role(request, ['admin'])
+    if err:
+        return err
+
+    orders_qs = Order.objects.all()
+    
+    # Filters
+    status_filter = request.query_params.get('status')
+    if status_filter:
+        orders_qs = orders_qs.filter(status=status_filter)
+    
+    customer_id = request.query_params.get('customer_id')
+    if customer_id:
+        orders_qs = orders_qs.filter(user_id=customer_id)
+    
+    date_from = request.query_params.get('date_from')
+    if date_from:
+        orders_qs = orders_qs.filter(created_at__date__gte=date_from)
+    
+    date_to = request.query_params.get('date_to')
+    if date_to:
+        orders_qs = orders_qs.filter(created_at__date__lte=date_to)
+    
+    return Response(OrderSerializer(orders_qs, many=True).data)
+
+
+@api_view(['PUT'])
+def admin_update_order_status(request, pk):
+    """Update order status (admin only)."""
+    user, err = require_role(request, ['admin'])
+    if err:
+        return err
+
+    try:
+        order = Order.objects.get(pk=pk)
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    if not new_status:
+        return Response({'error': 'Status is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    valid_statuses = [s[0] for s in Order.STATUS_CHOICES]
+    if new_status not in valid_statuses:
+        return Response({'error': f'Invalid status. Valid options: {valid_statuses}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    old_status = order.status
+    order.status = new_status
+    
+    # Update additional fields if provided
+    if 'admin_notes' in request.data:
+        order.admin_notes = request.data['admin_notes']
+    if 'estimated_delivery' in request.data:
+        order.estimated_delivery = request.data['estimated_delivery']
+    if 'payment_status' in request.data:
+        order.payment_status = request.data['payment_status']
+    
+    # Set delivered_at if status is delivered
+    if new_status == 'delivered' and not order.delivered_at:
+        order.delivered_at = datetime.datetime.now()
+    
+    order.save()
+    
+    # Create status history
+    OrderStatusHistory.objects.create(
+        order=order,
+        status=new_status,
+        changed_by=user,
+        notes=request.data.get('notes', f'Status changed from {old_status} to {new_status}')
+    )
+    
+    return Response(OrderSerializer(order).data)
+
+
+@api_view(['GET'])
+def admin_order_stats(request):
+    """Get order statistics (admin only)."""
+    user, err = require_role(request, ['admin'])
+    if err:
+        return err
+
+    from django.db.models import Count, Sum
+
+    total_orders = Order.objects.count()
+    pending_orders = Order.objects.filter(status='pending').count()
+    in_progress_orders = Order.objects.filter(status='in_progress').count()
+    completed_orders = Order.objects.filter(status='delivered').count()
+    cancelled_orders = Order.objects.filter(status='cancelled').count()
+    
+    total_revenue = Order.objects.filter(
+        status__in=['delivered', 'shipped', 'ready']
+    ).aggregate(total=Sum('total_price'))['total'] or 0
+
+    return Response({
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
+        'in_progress_orders': in_progress_orders,
+        'completed_orders': completed_orders,
+        'cancelled_orders': cancelled_orders,
+        'total_revenue': float(total_revenue),
+    })

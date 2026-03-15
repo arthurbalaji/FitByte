@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   getClothingTypes, getFabrics, getFabricColors, getPatterns,
   getMeasurementFields, saveMeasurement,
 } from '../api';
-import { Check, Info, ArrowLeft, ArrowRight, Save } from 'lucide-react';
-import MannequinPreview2D from '../components/MannequinPreview2D';
+import { Check, Info, ArrowLeft, ArrowRight, Save, Eye } from 'lucide-react';
 
 const GENDERS = [
   { value: 'male', label: 'Male', emoji: '👔' },
@@ -23,27 +22,31 @@ const STEPS = [
 
 const NewOrder = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(1);
 
+  // Restore state if coming back from TrialView
+  const restoredState = location.state;
+
   // Step 1 state
-  const [gender, setGender] = useState('');
+  const [gender, setGender] = useState(restoredState?.gender || '');
   const [clothingTypes, setClothingTypes] = useState([]);
-  const [selectedClothing, setSelectedClothing] = useState(null);
+  const [selectedClothing, setSelectedClothing] = useState(restoredState?.selectedClothing || null);
 
   // Step 2 state
   const [fabrics, setFabrics] = useState([]);
   const [colors, setColors] = useState([]);
   const [patterns, setPatterns] = useState([]);
-  const [selectedFabric, setSelectedFabric] = useState(null);
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [selectedPattern, setSelectedPattern] = useState(null);
-  const [fabricSource, setFabricSource] = useState('tailor');
+  const [selectedFabric, setSelectedFabric] = useState(restoredState?.selectedFabric || null);
+  const [selectedColor, setSelectedColor] = useState(restoredState?.selectedColor || null);
+  const [selectedPattern, setSelectedPattern] = useState(restoredState?.selectedPattern || null);
+  const [fabricSource, setFabricSource] = useState(restoredState?.fabricSource || 'tailor');
 
   // Step 3 state
-  const [sizeType, setSizeType] = useState('standard');
-  const [standardSize, setStandardSize] = useState('');
+  const [sizeType, setSizeType] = useState(restoredState?.sizeType || 'standard');
+  const [standardSize, setStandardSize] = useState(restoredState?.standardSize || '');
   const [measurementFields, setMeasurementFields] = useState([]);
-  const [customMeasurements, setCustomMeasurements] = useState({});
+  const [customMeasurements, setCustomMeasurements] = useState(restoredState?.customMeasurements || {});
   const [saveLabel, setSaveLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -82,9 +85,15 @@ const NewOrder = () => {
     loadMeasurementFields();
   }, [loadMeasurementFields]);
 
+  // Set step to 3 if restored from TrialView
+  useEffect(() => {
+    if (restoredState) setStep(3);
+  }, [restoredState]);
+
   const canProceed = (s) => {
     if (s === 1) return gender && selectedClothing;
     if (s === 2) return selectedFabric;
+    if (s === 3) return (sizeType === 'standard' && standardSize) || sizeType === 'custom';
     return true;
   };
 
@@ -120,6 +129,21 @@ const NewOrder = () => {
     }
   };
 
+  const handleContinueToTrialView = () => {
+    const orderData = {
+      gender,
+      selectedClothing,
+      selectedFabric,
+      selectedColor,
+      selectedPattern,
+      fabricSource,
+      sizeType,
+      standardSize,
+      customMeasurements,
+    };
+    navigate('/trial-view', { state: orderData });
+  };
+
   const getClothingEmoji = (name) => {
     const map = {
       'Shirt': '👕', 'Pant': '👖', 'Kurta': '🥻', 'Suit': '🤵', 'Blazer': '🧥', 'Sherwani': '🥻',
@@ -138,9 +162,7 @@ const NewOrder = () => {
   };
 
   return (
-    <div className="new-order-layout">
-      {/* Left: Order flow */}
-      <div className="new-order-main">
+    <div>
       <div className="page-header">
         <h1>New Custom Order</h1>
         <p>Follow the steps to configure your perfect outfit</p>
@@ -468,30 +490,17 @@ const NewOrder = () => {
               <ArrowLeft size={16} /> Back
             </button>
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-lg"
               style={{ width: 'auto' }}
-              onClick={() => {
-                alert('Order configuration complete! Module 4 (Checkout) coming soon.');
-                navigate('/dashboard');
-              }}
+              disabled={!canProceed(3)}
+              onClick={handleContinueToTrialView}
             >
-              Complete <Check size={16} />
+              <Eye size={18} />
+              Continue to Trial View <ArrowRight size={16} />
             </button>
           </div>
         </div>
       )}
-      </div>
-
-      {/* Right: Live Preview Panel */}
-      <div className="new-order-preview">
-        <MannequinPreview2D
-          gender={gender || 'male'}
-          clothingType={selectedClothing?.name || 'Shirt'}
-          fabricColor={selectedColor?.hex_code || '#4a90d9'}
-          patternName={selectedPattern?.name || 'solid'}
-          fabricName={selectedFabric?.name || 'Cotton'}
-        />
-      </div>
     </div>
   );
 };

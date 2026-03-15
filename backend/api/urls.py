@@ -19,6 +19,16 @@ urlpatterns = [
     path('saved-measurements/', views.saved_measurements),
     path('saved-measurements/<int:pk>/', views.saved_measurement_detail),
 
+    # Addresses
+    path('addresses/', views.addresses),
+    path('addresses/<int:pk>/', views.address_detail),
+    path('addresses/<int:pk>/set-default/', views.set_default_address),
+
+    # Orders (Customer)
+    path('orders/', views.orders),
+    path('orders/<int:pk>/', views.order_detail),
+    path('orders/<int:pk>/cancel/', views.cancel_order),
+
     # Admin
     path('admin/users/', views.admin_users),
     path('admin/users/<int:pk>/', views.admin_update_user),
@@ -28,6 +38,11 @@ urlpatterns = [
     path('admin/clothing-types/<int:pk>/', views.manage_clothing_type),
     path('admin/fabrics/', views.manage_fabric),
     path('admin/fabrics/<int:pk>/', views.manage_fabric),
+
+    # Admin Orders
+    path('admin/orders/', views.admin_orders),
+    path('admin/orders/<int:pk>/status/', views.admin_update_order_status),
+    path('admin/orders/stats/', views.admin_order_stats),
 
     # Tailor
     path('tailor/customers/', views.tailor_customers),

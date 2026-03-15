@@ -32,6 +32,19 @@ export const saveMeasurement = (data) => API.post('/saved-measurements/', data);
 export const updateMeasurement = (id, data) => API.put(`/saved-measurements/${id}/`, data);
 export const deleteMeasurement = (id) => API.delete(`/saved-measurements/${id}/`);
 
+// Addresses
+export const getAddresses = () => API.get('/addresses/');
+export const createAddress = (data) => API.post('/addresses/', data);
+export const updateAddress = (id, data) => API.put(`/addresses/${id}/`, data);
+export const deleteAddress = (id) => API.delete(`/addresses/${id}/`);
+export const setDefaultAddress = (id) => API.post(`/addresses/${id}/set-default/`);
+
+// Orders (Customer)
+export const getOrders = (status) => API.get(`/orders/${status ? `?status=${status}` : ''}`);
+export const getOrderDetail = (id) => API.get(`/orders/${id}/`);
+export const createOrder = (data) => API.post('/orders/', data);
+export const cancelOrder = (id) => API.post(`/orders/${id}/cancel/`);
+
 // Admin
 export const getAdminStats = () => API.get('/admin/stats/');
 export const getAdminUsers = (role) => API.get(`/admin/users/${role ? `?role=${role}` : ''}`);
@@ -48,5 +61,17 @@ export const deleteFabricItem = (id) => API.delete(`/admin/fabrics/${id}/`);
 export const getAdminCustomers = () => API.get('/tailor/customers/');
 export const getCustomerMeasurements = (customerId) =>
   API.get(`/tailor/customers/${customerId}/measurements/`);
+
+// Admin - Orders
+export const getAdminOrders = (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.status) params.append('status', filters.status);
+  if (filters.customer_id) params.append('customer_id', filters.customer_id);
+  if (filters.date_from) params.append('date_from', filters.date_from);
+  if (filters.date_to) params.append('date_to', filters.date_to);
+  return API.get(`/admin/orders/?${params.toString()}`);
+};
+export const updateOrderStatus = (id, data) => API.put(`/admin/orders/${id}/status/`, data);
+export const getOrderStats = () => API.get('/admin/orders/stats/');
 
 export default API;

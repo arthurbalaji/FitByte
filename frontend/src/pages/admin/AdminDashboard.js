@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
-import { getAdminStats } from '../../api';
-import { Users, Scissors, Palette, Ruler, ShieldCheck, ArrowUpRight, UserCheck } from 'lucide-react';
+import { getAdminStats, getOrderStats } from '../../api';
+import { Users, Scissors, Palette, Ruler, ShieldCheck, ArrowUpRight, UserCheck, Package, DollarSign, Clock } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [orderStats, setOrderStats] = useState(null);
 
   useEffect(() => {
     getAdminStats()
       .then((res) => setStats(res.data))
+      .catch(() => {});
+    getOrderStats()
+      .then((res) => setOrderStats(res.data))
       .catch(() => {});
   }, []);
 
@@ -22,8 +26,39 @@ const AdminDashboard = () => {
         <p>Welcome back, {user?.first_name}. Here's an overview of FitByte.</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Order Stats */}
       <div className="stats-row">
+        <div className="stat-card" onClick={() => navigate('/admin/orders')} style={{ cursor: 'pointer' }}>
+          <div className="stat-icon" style={{ background: '#eff6ff', color: '#4361ee' }}>
+            <Package size={22} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-number">{orderStats?.total_orders || 0}</span>
+            <span className="stat-label">Total Orders</span>
+          </div>
+        </div>
+        <div className="stat-card" onClick={() => navigate('/admin/orders')} style={{ cursor: 'pointer' }}>
+          <div className="stat-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
+            <Clock size={22} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-number">{orderStats?.pending_orders || 0}</span>
+            <span className="stat-label">Pending Orders</span>
+          </div>
+        </div>
+        <div className="stat-card" onClick={() => navigate('/admin/orders')} style={{ cursor: 'pointer' }}>
+          <div className="stat-icon" style={{ background: '#dcfce7', color: '#16a34a' }}>
+            <DollarSign size={22} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-number">₹{(orderStats?.total_revenue || 0).toLocaleString()}</span>
+            <span className="stat-label">Total Revenue</span>
+          </div>
+        </div>
+      </div>
+
+      {/* User Stats */}
+      <div className="stats-row" style={{ marginTop: 16 }}>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: '#eff6ff', color: '#4361ee' }}>
             <Users size={22} />
@@ -53,7 +88,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Secondary stats */}
+      {/* Inventory stats */}
       <div className="stats-row" style={{ marginTop: 16 }}>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: '#f3e8ff', color: '#7c3aed' }}>
@@ -86,8 +121,17 @@ const AdminDashboard = () => {
 
       <h2 className="section-title">Administration</h2>
       <div className="dashboard-grid">
-        <div className="dashboard-card" onClick={() => navigate('/admin/users')}>
+        <div className="dashboard-card" onClick={() => navigate('/admin/orders')}>
           <div className="card-icon-wrap" style={{ background: '#eff6ff', color: '#4361ee' }}>
+            <Package size={28} />
+          </div>
+          <h3>Order Management</h3>
+          <p>View, track, and update status for all customer orders.</p>
+          <span className="card-action">Manage <ArrowUpRight size={14} /></span>
+        </div>
+
+        <div className="dashboard-card" onClick={() => navigate('/admin/users')}>
+          <div className="card-icon-wrap" style={{ background: '#f3e8ff', color: '#7c3aed' }}>
             <Users size={28} />
           </div>
           <h3>Manage Users</h3>
