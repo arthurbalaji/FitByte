@@ -123,8 +123,19 @@ const GeminiDressPreview = ({
   // Track previous props to detect changes
   const prevPropsRef = useRef({ gender, clothingType, fabricColor, patternName, fabricName });
 
+  const parseDataUrl = (dataUrl) => {
+    if (!dataUrl || !dataUrl.startsWith('data:')) return null;
+    const [meta, base64Data] = dataUrl.split(',');
+    const mimeMatch = meta.match(/^data:(.*?);base64$/);
+    if (!mimeMatch || !base64Data) return null;
+    return {
+      mimeType: mimeMatch[1],
+      data: base64Data,
+    };
+  };
+
   // Generate image using Gemini API
-  const generateImage = useCallback(async (angle, dressDesc) => {
+  const generateImage = useCallback(async (angle, dressDesc, referenceImage = null) => {
     const patternDetail = patternName?.toLowerCase() === 'solid' 
       ? 'solid color with no patterns or prints, uniform single color throughout'
       : patternName?.toLowerCase() === 'striped'
@@ -196,6 +207,21 @@ NEGATIVE CONSTRAINTS:
 
 Return only the final image.`;
 
+    const requestParts = [{ text: prompt }];
+
+    const parsedReference = parseDataUrl(referenceImage);
+    if (parsedReference && angle.id !== 'front') {
+      requestParts.push({
+        text: 'REFERENCE IMAGE PROVIDED: Use the attached garment image as the master identity anchor. Preserve EXACT silhouette, seam map, panel geometry, collar/placket shape, sleeve geometry, hem contour, texture scale, color shade, and pattern spacing. Change ONLY camera viewpoint to the required target angle. Do not redesign or restyle.'
+      });
+      requestParts.push({
+        inlineData: {
+          mimeType: parsedReference.mimeType,
+          data: parsedReference.data,
+        }
+      });
+    }
+
     try {
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
         method: 'POST',
@@ -204,12 +230,12 @@ Return only the final image.`;
         },
         body: JSON.stringify({
           contents: [{
-            parts: [{
-              text: prompt
-            }]
+            parts: requestParts
           }],
           generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"]
+            responseModalities: ["IMAGE", "TEXT"],
+            temperature: 0.1,
+            topP: 0.8
           }
         }),
       });
@@ -235,7 +261,7 @@ Return only the final image.`;
       console.error(`Error generating ${angle.id} view:`, error);
       throw error;
     }
-  }, []);
+  }, [patternName, fabricColor, gender]);
 
   // Generate all 4 images
   const generateAllImages = useCallback(async () => {
@@ -244,12 +270,25 @@ Return only the final image.`;
     setLoading({ front: true, back: true, left: true, right: true });
     
     const dressDesc = generateDressDescription(clothingType, fabricName, fabricColor, patternName, gender);
-    
-    // Generate images sequentially to maintain consistency and avoid rate limiting
-    for (const angle of ANGLES) {
+
+    // Generate a master front image first, then use it as identity reference for all other angles.
+    let masterReference = null;
+    const orderedAngles = [
+      ANGLES.find((a) => a.id === 'front'),
+      ANGLES.find((a) => a.id === 'back'),
+      ANGLES.find((a) => a.id === 'left'),
+      ANGLES.find((a) => a.id === 'right'),
+    ].filter(Boolean);
+
+    for (const angle of orderedAngles) {
       try {
         setLoading(prev => ({ ...prev, [angle.id]: true }));
-        const imageUrl = await generateImage(angle, dressDesc);
+        const imageUrl = await generateImage(angle, dressDesc, masterReference);
+
+        if (angle.id === 'front' && imageUrl) {
+          masterReference = imageUrl;
+        }
+
         setImages(prev => ({ ...prev, [angle.id]: imageUrl }));
         setLoading(prev => ({ ...prev, [angle.id]: false }));
       } catch (error) {
@@ -279,14 +318,15 @@ Return only the final image.`;
     const dressDesc = generateDressDescription(clothingType, fabricName, fabricColor, patternName, gender);
     
     try {
-      const imageUrl = await generateImage(angle, dressDesc);
+      const referenceImage = angle.id === 'front' ? null : images.front;
+      const imageUrl = await generateImage(angle, dressDesc, referenceImage);
       setImages(prev => ({ ...prev, [angleId]: imageUrl }));
     } catch (error) {
       setErrors(prev => ({ ...prev, [angleId]: error.message }));
     } finally {
       setLoading(prev => ({ ...prev, [angleId]: false }));
     }
-  }, [clothingType, fabricName, fabricColor, patternName, gender, generateImage]);
+  }, [clothingType, fabricName, fabricColor, patternName, gender, generateImage, images.front]);
 
   // Auto-generate on prop changes (debounced)
   useEffect(() => {
