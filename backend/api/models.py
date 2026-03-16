@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import uuid
 
 
 class User(AbstractUser):
@@ -137,6 +138,7 @@ class Order(models.Model):
     
     # Order identification
     order_number = models.CharField(max_length=20, unique=True, editable=False)
+    checkout_group = models.CharField(max_length=36, blank=True, null=True, db_index=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     
     # Product details
@@ -190,7 +192,40 @@ class Order(models.Model):
             date_str = datetime.datetime.now().strftime('%Y%m%d')
             random_str = ''.join([str(random.randint(0, 9)) for _ in range(4)])
             self.order_number = f"FB{date_str}{random_str}"
+        if not self.checkout_group:
+            self.checkout_group = str(uuid.uuid4())
         super().save(*args, **kwargs)
+
+
+class CartItem(models.Model):
+    """Temporary cart item before checkout; each item can become an order."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart_items')
+
+    # Product details
+    gender = models.CharField(max_length=10)
+    clothing_type = models.ForeignKey(ClothingType, on_delete=models.PROTECT)
+    fabric = models.ForeignKey(Fabric, on_delete=models.PROTECT)
+    fabric_color = models.ForeignKey(FabricColor, on_delete=models.PROTECT)
+    pattern = models.ForeignKey(Pattern, on_delete=models.PROTECT)
+
+    # Measurements
+    size_type = models.CharField(max_length=10, choices=(('standard', 'Standard'), ('custom', 'Custom')))
+    standard_size = models.CharField(max_length=5, blank=True, null=True)
+    measurements = models.JSONField(default=dict)
+
+    # Fabric source and customer customizations
+    fabric_source = models.CharField(max_length=20, default='tailor')
+    quantity = models.PositiveIntegerField(default=1)
+    customer_notes = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"CartItem({self.user.email} - {self.clothing_type.name} x {self.quantity})"
 
 
 class OrderStatusHistory(models.Model):

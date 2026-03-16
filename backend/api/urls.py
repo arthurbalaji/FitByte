@@ -29,6 +29,11 @@ urlpatterns = [
     path('orders/<int:pk>/', views.order_detail),
     path('orders/<int:pk>/cancel/', views.cancel_order),
 
+    # Cart (Customer)
+    path('cart/', views.cart_items),
+    path('cart/<int:pk>/', views.cart_item_detail),
+    path('cart/checkout/', views.checkout_cart),
+
     # Admin
     path('admin/users/', views.admin_users),
     path('admin/users/<int:pk>/', views.admin_update_user),

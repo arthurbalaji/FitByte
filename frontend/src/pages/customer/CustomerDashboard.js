@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 import { getOrders } from '../../api';
-import { PlusCircle, TrendingUp, Package, MapPin, Scissors } from 'lucide-react';
+import { PlusCircle, TrendingUp, Package, MapPin, ShoppingCart } from 'lucide-react';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -76,12 +76,12 @@ const CustomerDashboard = () => {
           <p>Manage your delivery addresses for faster checkout on future orders.</p>
         </div>
 
-        <div className="dashboard-card" onClick={() => navigate('/new-order')}>
+        <div className="dashboard-card" onClick={() => navigate('/cart')}>
           <div className="card-icon-wrap" style={{ background: '#f0fdf4', color: '#16a34a' }}>
-            <Scissors size={28} />
+            <ShoppingCart size={28} />
           </div>
-          <h3>Explore Fabrics</h3>
-          <p>Browse through our collection of fabrics, colors, and patterns for your next outfit.</p>
+          <h3>My Cart</h3>
+          <p>Review multiple products, adjust quantities, and checkout all cart items together.</p>
         </div>
       </div>
     </div>

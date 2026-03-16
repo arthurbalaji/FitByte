@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 import { getAdminStats, getOrderStats } from '../../api';
-import { Users, Scissors, Palette, Ruler, ShieldCheck, ArrowUpRight, UserCheck, Package, DollarSign, Clock } from 'lucide-react';
+import { Users, Scissors, Palette, Ruler, ShieldCheck, ArrowUpRight, UserCheck, Package, DollarSign, Clock, ShoppingCart } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -115,6 +115,15 @@ const AdminDashboard = () => {
           <div className="stat-info">
             <span className="stat-number">{stats?.total_measurements || 0}</span>
             <span className="stat-label">Saved Measurements</span>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon" style={{ background: '#ecfeff', color: '#0891b2' }}>
+            <ShoppingCart size={22} />
+          </div>
+          <div className="stat-info">
+            <span className="stat-number">{stats?.total_cart_items || 0}</span>
+            <span className="stat-label">Items In Carts</span>
           </div>
         </div>
       </div>

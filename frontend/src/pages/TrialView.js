@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getAddresses, createAddress, createOrder } from '../api';
-import { ArrowLeft, ShoppingCart, CreditCard, MapPin, Plus, X, Check, RotateCcw, Eye } from 'lucide-react';
+import { addCartItem } from '../api';
+import { ArrowLeft, ShoppingCart, X, Check, RotateCcw, Eye } from 'lucide-react';
 import GeminiDressPreview from '../components/GeminiDressPreview';
-
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
-  'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
-  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
-  'Uttarakhand', 'West Bengal', 'Delhi', 'Chandigarh', 'Puducherry',
-];
 
 const TrialView = () => {
   const navigate = useNavigate();
@@ -26,53 +18,17 @@ const TrialView = () => {
 
   // Checkout state
   const [showCheckout, setShowCheckout] = useState(false);
-  const [addresses, setAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(null);
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    label: '', full_name: '', phone: '', address_line1: '', address_line2: '',
-    city: '', state: '', postal_code: '', country: 'India',
-  });
   const [quantity, setQuantity] = useState(1);
   const [customerNotes, setCustomerNotes] = useState('');
-  const [placingOrder, setPlacingOrder] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartSuccess, setCartSuccess] = useState(null);
   const [error, setError] = useState('');
 
-  // Load addresses
-  useEffect(() => {
-    getAddresses().then((res) => {
-      setAddresses(res.data);
-      const defaultAddr = res.data.find(a => a.is_default);
-      if (defaultAddr) setSelectedAddress(defaultAddr);
-    }).catch(console.error);
-  }, []);
-
-  const handleSaveNewAddress = async () => {
-    if (!newAddress.full_name || !newAddress.phone || !newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) {
-      setError('Please fill in all required fields');
-      return;
-    }
-    try {
-      const res = await createAddress(newAddress);
-      setAddresses([...addresses, res.data]);
-      setSelectedAddress(res.data);
-      setShowAddressForm(false);
-      setNewAddress({ label: '', full_name: '', phone: '', address_line1: '', address_line2: '', city: '', state: '', postal_code: '', country: 'India' });
-    } catch (err) {
-      setError('Failed to save address');
-    }
-  };
-
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      setError('Please select a delivery address');
-      return;
-    }
-    setPlacingOrder(true);
+  const handleAddToCart = async () => {
+    setAddingToCart(true);
     setError('');
     try {
-      const finalOrderData = {
+      const cartPayload = {
         clothing_type: orderData.selectedClothing.id,
         fabric: orderData.selectedFabric?.id,
         fabric_color: orderData.selectedColor?.id,
@@ -81,50 +37,44 @@ const TrialView = () => {
         standard_size: orderData.sizeType === 'standard' ? orderData.standardSize : null,
         measurements: orderData.sizeType === 'custom' ? orderData.customMeasurements : {},
         gender: orderData.gender,
-        delivery_address: {
-          full_name: selectedAddress.full_name,
-          phone: selectedAddress.phone,
-          address_line1: selectedAddress.address_line1,
-          address_line2: selectedAddress.address_line2 || '',
-          city: selectedAddress.city,
-          state: selectedAddress.state,
-          postal_code: selectedAddress.postal_code,
-          country: selectedAddress.country,
-        },
+        fabric_source: 'tailor',
         quantity: quantity,
         customer_notes: customerNotes,
       };
-      const res = await createOrder(finalOrderData);
-      setOrderSuccess(res.data);
+      await addCartItem(cartPayload);
+      setCartSuccess({
+        clothingType: orderData.selectedClothing?.name,
+        quantity,
+      });
+      setShowCheckout(false);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to place order. Please try again.');
+      setError(err.response?.data?.error || 'Failed to add to cart. Please try again.');
     } finally {
-      setPlacingOrder(false);
+      setAddingToCart(false);
     }
   };
 
   if (!orderData) return null;
 
   // Order Success View
-  if (orderSuccess) {
+  if (cartSuccess) {
     return (
       <div className="trial-view-page">
         <div className="success-container">
           <div className="success-icon">
             <Check size={48} />
           </div>
-          <h2>Order Placed Successfully!</h2>
-          <p className="order-number">Order #{orderSuccess.order_number}</p>
+          <h2>Added To Cart!</h2>
+          <p className="order-number">{cartSuccess.clothingType} × {cartSuccess.quantity}</p>
           <p className="success-message">
-            Your custom {orderData.selectedClothing?.name} order has been placed. 
-            You will receive updates on your order status.
+            Item added successfully. You can add more products and then checkout all of them together.
           </p>
           <div className="success-actions">
-            <button className="btn btn-primary" onClick={() => navigate('/orders')}>
-              View My Orders
+            <button className="btn btn-primary" onClick={() => navigate('/new-order')}>
+              Add Another Product
             </button>
-            <button className="btn btn-secondary" onClick={() => navigate('/dashboard')}>
-              Back to Dashboard
+            <button className="btn btn-secondary" onClick={() => navigate('/cart')}>
+              Go To Cart & Checkout
             </button>
           </div>
         </div>
@@ -148,7 +98,7 @@ const TrialView = () => {
           {!showCheckout && (
             <button className="btn btn-primary btn-lg" onClick={() => setShowCheckout(true)}>
               <ShoppingCart size={18} />
-              Add to Cart & Checkout
+              Add to Cart
             </button>
           )}
         </div>
@@ -226,7 +176,7 @@ const TrialView = () => {
         {showCheckout && (
           <div className="checkout-panel">
             <div className="checkout-header">
-              <h2><ShoppingCart size={20} /> Checkout</h2>
+              <h2><ShoppingCart size={20} /> Add To Cart</h2>
               <button className="btn-icon" onClick={() => setShowCheckout(false)}>
                 <X size={20} />
               </button>
@@ -235,79 +185,6 @@ const TrialView = () => {
             {error && <div className="alert alert-error">{error}</div>}
 
             <div className="checkout-body">
-              {/* Address Selection */}
-              <div className="checkout-section">
-                <h3><MapPin size={16} /> Delivery Address</h3>
-                
-                {addresses.length > 0 && !showAddressForm && (
-                  <div className="address-list">
-                    {addresses.map((addr) => (
-                      <div
-                        key={addr.id}
-                        className={`address-option ${selectedAddress?.id === addr.id ? 'selected' : ''}`}
-                        onClick={() => setSelectedAddress(addr)}
-                      >
-                        <div className="address-radio" />
-                        <div className="address-info">
-                          <span className="addr-label">{addr.label || 'Address'} {addr.is_default && <span className="default-tag">Default</span>}</span>
-                          <span className="addr-name">{addr.full_name}</span>
-                          <span className="addr-line">{addr.address_line1}, {addr.city}</span>
-                        </div>
-                      </div>
-                    ))}
-                    <button className="btn-add-address" onClick={() => setShowAddressForm(true)}>
-                      <Plus size={16} /> Add New Address
-                    </button>
-                  </div>
-                )}
-
-                {(addresses.length === 0 || showAddressForm) && (
-                  <div className="address-form-compact">
-                    <div className="form-field">
-                      <label>Label</label>
-                      <input type="text" placeholder="Home, Office, etc." value={newAddress.label} onChange={(e) => setNewAddress({...newAddress, label: e.target.value})} />
-                    </div>
-                    <div className="form-field">
-                      <label>Full Name <span className="required">*</span></label>
-                      <input type="text" placeholder="Enter full name" value={newAddress.full_name} onChange={(e) => setNewAddress({...newAddress, full_name: e.target.value})} />
-                    </div>
-                    <div className="form-field">
-                      <label>Phone <span className="required">*</span></label>
-                      <input type="tel" placeholder="10-digit phone number" value={newAddress.phone} onChange={(e) => setNewAddress({...newAddress, phone: e.target.value})} />
-                    </div>
-                    <div className="form-field">
-                      <label>Address Line 1 <span className="required">*</span></label>
-                      <input type="text" placeholder="House/Flat No., Building, Street" value={newAddress.address_line1} onChange={(e) => setNewAddress({...newAddress, address_line1: e.target.value})} />
-                    </div>
-                    <div className="form-field">
-                      <label>Address Line 2</label>
-                      <input type="text" placeholder="Locality, Landmark (optional)" value={newAddress.address_line2} onChange={(e) => setNewAddress({...newAddress, address_line2: e.target.value})} />
-                    </div>
-                    <div className="form-row-2">
-                      <div className="form-field">
-                        <label>City <span className="required">*</span></label>
-                        <input type="text" placeholder="City" value={newAddress.city} onChange={(e) => setNewAddress({...newAddress, city: e.target.value})} />
-                      </div>
-                      <div className="form-field">
-                        <label>PIN Code <span className="required">*</span></label>
-                        <input type="text" placeholder="6-digit PIN" value={newAddress.postal_code} onChange={(e) => setNewAddress({...newAddress, postal_code: e.target.value})} />
-                      </div>
-                    </div>
-                    <div className="form-field">
-                      <label>State <span className="required">*</span></label>
-                      <select value={newAddress.state} onChange={(e) => setNewAddress({...newAddress, state: e.target.value})}>
-                        <option value="">Select State</option>
-                        {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div className="form-actions-row">
-                      {addresses.length > 0 && <button className="btn btn-sm btn-outline" onClick={() => setShowAddressForm(false)}>Cancel</button>}
-                      <button className="btn btn-sm btn-primary" onClick={handleSaveNewAddress}>Save Address</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* Quantity */}
               <div className="checkout-section">
                 <h3>Quantity</h3>
@@ -334,11 +211,11 @@ const TrialView = () => {
             <div className="checkout-footer">
               <button
                 className="btn btn-primary btn-place-order"
-                onClick={handlePlaceOrder}
-                disabled={!selectedAddress || placingOrder}
+                onClick={handleAddToCart}
+                disabled={addingToCart}
               >
-                <CreditCard size={18} />
-                {placingOrder ? 'Placing Order...' : 'Place Order'}
+                <ShoppingCart size={18} />
+                {addingToCart ? 'Adding...' : 'Add Item To Cart'}
               </button>
             </div>
           </div>

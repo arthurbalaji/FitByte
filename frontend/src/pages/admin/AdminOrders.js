@@ -240,6 +240,7 @@ const AdminOrders = () => {
             <thead>
               <tr>
                 <th>Order #</th>
+                <th>Checkout Batch</th>
                 <th>Customer</th>
                 <th>Product</th>
                 <th>Date</th>
@@ -253,6 +254,9 @@ const AdminOrders = () => {
                 <tr key={order.id}>
                   <td className="order-number-cell">
                     <strong>{order.order_number}</strong>
+                  </td>
+                  <td>
+                    <span className="batch-chip">{order.checkout_group ? order.checkout_group.slice(0, 8) : '-'}</span>
                   </td>
                   <td>
                     <div className="customer-cell">
@@ -341,6 +345,9 @@ const AdminOrders = () => {
                       Payment: {selectedOrder.payment_status_display}
                     </span>
                   </div>
+                  <p style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
+                    Checkout Batch: <strong>{selectedOrder.checkout_group || '-'}</strong>
+                  </p>
                 </div>
 
                 {/* Product Details */}
@@ -622,6 +629,16 @@ const AdminOrders = () => {
         }
         .order-number-cell strong {
           color: #4361ee;
+        }
+        .batch-chip {
+          display: inline-block;
+          padding: 3px 8px;
+          border-radius: 999px;
+          background: #eef2ff;
+          color: #4338ca;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.2px;
         }
         .customer-cell .name {
           display: block;

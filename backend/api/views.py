@@ -1,16 +1,18 @@
 import jwt
 import datetime
 from django.conf import settings
+from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
-from .models import User, ClothingType, Fabric, FabricColor, Pattern, MeasurementField, SavedMeasurement, Address, Order, OrderStatusHistory
+from .models import User, ClothingType, Fabric, FabricColor, Pattern, MeasurementField, SavedMeasurement, Address, Order, OrderStatusHistory, CartItem
 from .serializers import (
     RegisterSerializer, LoginSerializer, UserSerializer,
     ClothingTypeSerializer, FabricSerializer, FabricColorSerializer,
     PatternSerializer, MeasurementFieldSerializer, SavedMeasurementSerializer,
-    AddressSerializer, OrderSerializer, OrderCreateSerializer, OrderStatusHistorySerializer
+    AddressSerializer, OrderSerializer, OrderCreateSerializer, OrderStatusHistorySerializer,
+    CartItemSerializer
 )
 
 
@@ -256,6 +258,7 @@ def admin_stats(request):
         'total_clothing_types': ClothingType.objects.count(),
         'total_fabrics': Fabric.objects.count(),
         'total_measurements': SavedMeasurement.objects.count(),
+        'total_cart_items': CartItem.objects.count(),
     })
 
 
@@ -433,6 +436,116 @@ def orders(request):
         )
         
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+# ─── CART MANAGEMENT (CUSTOMER) ──────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def cart_items(request):
+    """List cart items or add a new item to cart."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if request.method == 'GET':
+        items = CartItem.objects.filter(user=user)
+        return Response(CartItemSerializer(items, many=True).data)
+
+    serializer = CartItemSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    item = serializer.save(user=user)
+    return Response(CartItemSerializer(item).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['PUT', 'DELETE'])
+def cart_item_detail(request, pk):
+    """Update quantity/notes or remove an item from cart."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        item = CartItem.objects.get(pk=pk, user=user)
+    except CartItem.DoesNotExist:
+        return Response({'error': 'Cart item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = CartItemSerializer(item, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data)
+
+    item.delete()
+    return Response({'message': 'Cart item removed'}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+def checkout_cart(request):
+    """Checkout all cart items into orders using one delivery address."""
+    user = get_user_from_token(request)
+    if not user:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    items = list(CartItem.objects.filter(user=user))
+    if not items:
+        return Response({'error': 'Cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+    delivery_address = request.data.get('delivery_address')
+    if not isinstance(delivery_address, dict):
+        return Response({'error': 'delivery_address is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    required_address_fields = ['full_name', 'phone', 'address_line1', 'city', 'state', 'postal_code', 'country']
+    missing = [f for f in required_address_fields if not delivery_address.get(f)]
+    if missing:
+        return Response({'error': f"Missing delivery address fields: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    global_notes = request.data.get('customer_notes', '')
+    checkout_group = request.data.get('checkout_group')
+
+    created_orders = []
+    with transaction.atomic():
+        for item in items:
+            merged_notes = item.customer_notes or ''
+            if global_notes:
+                merged_notes = f"{merged_notes}\n{global_notes}".strip() if merged_notes else global_notes
+
+            order = Order.objects.create(
+                user=user,
+                checkout_group=checkout_group,
+                gender=item.gender,
+                clothing_type=item.clothing_type,
+                fabric=item.fabric,
+                fabric_color=item.fabric_color,
+                pattern=item.pattern,
+                size_type=item.size_type,
+                standard_size=item.standard_size,
+                measurements=item.measurements,
+                fabric_source=item.fabric_source,
+                delivery_address=delivery_address,
+                quantity=item.quantity,
+                customer_notes=merged_notes,
+                unit_price=1000,
+                total_price=item.quantity * 1000,
+            )
+
+            OrderStatusHistory.objects.create(
+                order=order,
+                status='pending',
+                changed_by=user,
+                notes='Order placed from cart checkout'
+            )
+            created_orders.append(order)
+
+        CartItem.objects.filter(user=user).delete()
+
+    return Response({
+        'message': f'{len(created_orders)} order(s) placed successfully',
+        'orders': OrderSerializer(created_orders, many=True).data,
+        'order_numbers': [o.order_number for o in created_orders],
+        'checkout_group': created_orders[0].checkout_group if created_orders else None,
+    }, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET'])

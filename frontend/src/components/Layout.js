@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import {
   LayoutDashboard, PlusCircle, Users, Scissors, Palette, LogOut,
-  Menu, X, ShieldCheck, ChevronRight, UserCheck, Package, MapPin, Eye
+  Menu, X, ShieldCheck, ChevronRight, UserCheck, Package, MapPin, Eye, ShoppingCart
 } from 'lucide-react';
 
 const NAV_CONFIG = {
@@ -11,6 +11,7 @@ const NAV_CONFIG = {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/new-order', icon: PlusCircle, label: 'Create Order' },
     { to: '/trial-view', icon: Eye, label: 'Trial View' },
+    { to: '/cart', icon: ShoppingCart, label: 'My Cart' },
     { to: '/orders', icon: Package, label: 'My Orders' },
     { to: '/addresses', icon: MapPin, label: 'My Addresses' },
   ],

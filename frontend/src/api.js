@@ -45,6 +45,13 @@ export const getOrderDetail = (id) => API.get(`/orders/${id}/`);
 export const createOrder = (data) => API.post('/orders/', data);
 export const cancelOrder = (id) => API.post(`/orders/${id}/cancel/`);
 
+// Cart (Customer)
+export const getCartItems = () => API.get('/cart/');
+export const addCartItem = (data) => API.post('/cart/', data);
+export const updateCartItem = (id, data) => API.put(`/cart/${id}/`, data);
+export const deleteCartItem = (id) => API.delete(`/cart/${id}/`);
+export const checkoutCart = (data) => API.post('/cart/checkout/', data);
+
 // Admin
 export const getAdminStats = () => API.get('/admin/stats/');
 export const getAdminUsers = (role) => API.get(`/admin/users/${role ? `?role=${role}` : ''}`);

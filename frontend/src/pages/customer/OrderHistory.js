@@ -169,6 +169,10 @@ const OrderHistory = () => {
                     <span className="value">{formatDate(order.created_at)}</span>
                   </div>
                   <div className="meta-item">
+                    <span className="label">Checkout Batch</span>
+                    <span className="value">{order.checkout_group ? order.checkout_group.slice(0, 8) : '-'}</span>
+                  </div>
+                  <div className="meta-item">
                     <span className="label">Quantity</span>
                     <span className="value">{order.quantity}</span>
                   </div>
@@ -268,6 +272,10 @@ const OrderHistory = () => {
                         {selectedOrder.size_type}
                         {selectedOrder.standard_size && ` (${selectedOrder.standard_size})`}
                       </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="label">Checkout Group</span>
+                      <span className="value">{selectedOrder.checkout_group || '-'}</span>
                     </div>
                   </div>
                 </div>

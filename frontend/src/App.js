@@ -10,6 +10,7 @@ import Layout from './components/Layout';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import NewOrder from './pages/NewOrder';
 import TrialView from './pages/TrialView';
+import Cart from './pages/customer/Cart';
 import Addresses from './pages/customer/Addresses';
 import OrderHistory from './pages/customer/OrderHistory';
 
@@ -61,6 +62,7 @@ function App() {
             {/* Customer routes */}
             <Route path="new-order" element={<RoleRoute roles={['customer']}><NewOrder /></RoleRoute>} />
             <Route path="trial-view" element={<RoleRoute roles={['customer']}><TrialView /></RoleRoute>} />
+            <Route path="cart" element={<RoleRoute roles={['customer']}><Cart /></RoleRoute>} />
             <Route path="addresses" element={<RoleRoute roles={['customer']}><Addresses /></RoleRoute>} />
             <Route path="orders" element={<RoleRoute roles={['customer']}><OrderHistory /></RoleRoute>} />
 
